@@ -14,6 +14,10 @@ on:
         description: "Versión (p. ej. 0.22.0). Vacío: la de la última publicación."
         required: false
         default: ""
+      probar:
+        description: "Solo compilar y probar (con la prueba de humo), sin subir nada a las descargas."
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -58,7 +62,7 @@ jobs:
           grep '^VERSION' montaje/podgami_montaje.py
       - name: Herramientas de Linux
         if: runner.os == 'Linux'
-        run: sudo apt-get update -q && sudo apt-get install -y -q python3-venv dpkg-dev curl
+        run: sudo apt-get update -q && sudo apt-get install -y -q python3-venv dpkg-dev curl libxcb-cursor0 libnss3 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 libegl1 libasound2   # lo que pide la ventana de Qt (PyInstaller lo mete en el .tar.gz)
       - name: Compilar, probar y subir a las descargas
         shell: bash
         timeout-minutes: 65
@@ -67,8 +71,10 @@ jobs:
           PODGAMI_HUMO: ${{ github.workspace }}/humo
           GH_TOKEN: ${{ github.token }}
           PYTHON: python
+          PODGAMI_SOLO_PROBAR: ${{ inputs.probar && '1' || '' }}
         run: |
+          M=--subir; [ -n "$PODGAMI_SOLO_PROBAR" ] && M=--paquete
           case "$RUNNER_OS" in
-            Linux) sh montaje/compilar_linux.sh --subir ;;
-            macOS) sh montaje/compilar_mac.sh --subir ;;
+            Linux) sh montaje/compilar_linux.sh $M ;;
+            macOS) sh montaje/compilar_mac.sh $M ;;
           esac
